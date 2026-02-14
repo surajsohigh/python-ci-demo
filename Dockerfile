@@ -10,7 +10,8 @@ COPY requirements.txt .
 
 # Install dependencies
 RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+    pip install -r requirements.txt && \
+    pip install pytest pytest-cov flake8 black
 
 # Copy project files
 COPY . .
