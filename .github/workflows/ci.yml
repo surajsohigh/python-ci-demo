@@ -24,5 +24,7 @@ jobs:
             --build-arg PYTHON_VERSION=${{ matrix.python-version }} \
             -t my-python-app .
 
+      # same as above example: run: docker build -t my-app .
+
       - name: Run tests
         run: docker run my-python-app

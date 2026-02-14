@@ -17,4 +17,6 @@ RUN pip install --upgrade pip && \
 COPY . .
 
 # Default command
+# CMD sh -c "black --check . && pytest --cov=."
+# CMD sh -c "black --check . && flake8 . && pytest --cov=."
 CMD ["pytest", "--cov=.", "--cov-report=term"]
