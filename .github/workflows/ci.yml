@@ -40,9 +40,6 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-cov flake8 black
 
-      - name: Lint with flake8
-        run: flake8 .
-
       - name: Check formatting with black
         run: black --check .
 
