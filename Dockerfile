@@ -1,22 +1,25 @@
-# Use official Python image
+# ---------- Base ----------
 ARG PYTHON_VERSION=3.11
 FROM python:${PYTHON_VERSION}-slim
 
-# Set working directory
+# ---------- Environment ----------
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-# Copy dependency file
+# ---------- System Dependencies ----------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---------- Python Dependencies ----------
 COPY requirements.txt .
-
-# Install dependencies
 RUN pip install --upgrade pip && \
-    pip install -r requirements.txt && \
-    pip install pytest pytest-cov flake8 black
+    pip install -r requirements.txt
 
-# Copy project files
+# ---------- Copy Project ----------
 COPY . .
 
-# Default command
-# CMD sh -c "black --check . && pytest --cov=."
-# CMD sh -c "black --check . && flake8 . && pytest --cov=."
-CMD ["pytest", "--cov=.", "--cov-report=term"]
+# ---------- Default Command ----------
+CMD ["python", "app.py"]

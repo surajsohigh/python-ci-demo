@@ -1,4 +1,4 @@
-name: Docker Matrix CI
+name: Production CI/CD
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: ["main"]
 
 jobs:
-  docker-test:
+  test:
     runs-on: ubuntu-latest
 
     strategy:
@@ -18,13 +18,63 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Docker image
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov flake8 black
+
+      # -------- LINT --------
+      - name: Run Black
+        run: black --check .
+
+      - name: Run Flake8
+        run: flake8 .
+
+      # -------- TEST + COVERAGE --------
+      - name: Run Tests
+        run: pytest --cov=. --cov-report=xml
+
+      - name: Upload Coverage Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Login to GHCR (no password needed)
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Extract Version
+        id: vars
+        run: echo "VERSION=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      - name: Build Docker Image
         run: |
           docker build \
-            --build-arg PYTHON_VERSION=${{ matrix.python-version }} \
-            -t my-python-app .
+            -t ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.VERSION }} \
+            -t ghcr.io/${{ github.repository }}:latest \
+            .
 
-      # same as above example: run: docker build -t my-app .
-
-      - name: Run tests
-        run: docker run my-python-app
+      - name: Push Docker Image
+        run: |
+          docker push ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.VERSION }}
+          docker push ghcr.io/${{ github.repository }}:latest
